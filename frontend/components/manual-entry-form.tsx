@@ -5,7 +5,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Trash2,
   Plus,
-  Play,
   AlertCircle,
   CheckCircle,
   Edit,
@@ -14,7 +13,6 @@ import {
   ChevronRight,
   ChevronDown,
   FlaskConical,
-  Activity,
   ShieldAlert,
   ShieldCheck,
   ArrowRight,
@@ -41,12 +39,6 @@ import {
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { SAMPLE_CSV_CONTENT } from "@/components/data/sample-csv";
-
-// Fallback CSV data in case the import fails or is empty
-const FALLBACK_CSV = `flow_duration,proto,service,state,spkts,dpkts,sbytes,dbytes
-0.000000,udp,-,INT,2,0,114,0
-0.000000,udp,-,INT,2,0,114,0
-0.000009,udp,-,INT,2,0,114,0`;
 
 interface ColumnSchema {
   name: string;
@@ -94,63 +86,70 @@ export default function ManualEntryForm({
   // --- CRUD Operations ---
 
   const addRandomSample = () => {
-    // Use imported content, or fallback if empty/undefined
-    const csvContent = SAMPLE_CSV_CONTENT || FALLBACK_CSV;
-
-    if (!csvContent) {
+    if (!SAMPLE_CSV_CONTENT) {
       console.error("No CSV content available");
       return;
     }
 
-    // FIX: Split by any amount of whitespace/newlines and filter empty lines
-    const lines = csvContent
-      .trim()
-      .split(/\n+/) // Split by one or more newlines
-      .filter((line) => line.trim().length > 0); // Remove empty lines
+    // Split CSV into lines and filter empty ones
+    const lines = SAMPLE_CSV_CONTENT.trim()
+      .split(/\n+/)
+      .filter((line) => line.trim().length > 0);
 
     if (lines.length < 2) {
       console.error("Not enough data in CSV");
       return;
     }
 
-    // Clean headers by removing quotes and whitespace
-    const headers = lines[0]
-      .split(",")
-      .map((h) => h.trim().replace(/^["']|["']$/g, "")); // Remove quotes from both ends
+    // Parse headers
+    const headers = lines[0].split(",").map((h) => h.trim());
 
-    // Pick Random Row (excluding header)
+    // Pick a random data row (excluding header)
     const dataRows = lines.slice(1);
     const randomIndex = Math.floor(Math.random() * dataRows.length);
     const rowValues = dataRows[randomIndex].split(",").map((v) => v.trim());
 
-    // Better ID generation (Max ID + 1) to avoid duplicates after deletion
-    const nextId =
-      flows.length > 0 ? Math.max(...flows.map((f) => Number(f.id))) + 1 : 1;
-
-    const newFlow: FlowEntry = { id: nextId };
-
-    headers.forEach((header, index) => {
-      if (rowValues[index] !== undefined) {
-        // Clean values by removing quotes and trimming
-        let val = rowValues[index].trim();
-        if (
-          (val.startsWith('"') && val.endsWith('"')) ||
-          (val.startsWith("'") && val.endsWith("'"))
-        ) {
-          val = val.slice(1, -1);
-        }
-
-        // Try to parse as number if it looks like one
-        const numVal = Number(val);
-        newFlow[header] = !isNaN(numVal) && val !== "" ? numVal : val;
-      }
-    });
-
-    // Check if the current state is just the initial empty row
+    // Check if current state is just the initial empty row
     const isInitialEmpty =
       flows.length === 1 &&
       Object.keys(flows[0]).length === 1 &&
       "id" in flows[0];
+
+    // Generate appropriate ID: reuse first ID if replacing empty row, otherwise increment
+    const nextId = isInitialEmpty
+      ? flows[0].id // Keep the same ID (typically 1)
+      : flows.length > 0
+      ? Math.max(...flows.map((f) => Number(f.id))) + 1
+      : 1;
+
+    const newFlow: FlowEntry = { id: nextId };
+
+    // Map CSV values to flow object
+    headers.forEach((header, index) => {
+      if (rowValues[index] !== undefined) {
+        const val = rowValues[index].trim();
+
+        // Find the column schema to determine type
+        const colSchema = columns.find((c) => c.name === header);
+
+        if (colSchema) {
+          if (colSchema.type === "integer") {
+            const numVal = parseInt(val);
+            newFlow[header] = !isNaN(numVal) ? numVal : 0;
+          } else if (colSchema.type === "float") {
+            const numVal = parseFloat(val);
+            newFlow[header] = !isNaN(numVal) ? numVal : 0.0;
+          } else {
+            // String type (like IP addresses)
+            newFlow[header] = val;
+          }
+        } else {
+          // Fallback: try to parse as number
+          const numVal = Number(val);
+          newFlow[header] = !isNaN(numVal) && val !== "" ? numVal : val;
+        }
+      }
+    });
 
     if (isInitialEmpty) {
       setFlows([newFlow]);
@@ -161,7 +160,21 @@ export default function ManualEntryForm({
 
   const updateFlow = (index: number, field: string, value: string) => {
     const newFlows = [...flows];
-    newFlows[index] = { ...newFlows[index], [field]: value };
+    const col = columns.find((c) => c.name === field);
+
+    // Convert value based on column type
+    let convertedValue: string | number = value;
+    if (col) {
+      if (col.type === "integer") {
+        const num = parseInt(value);
+        convertedValue = isNaN(num) ? 0 : num;
+      } else if (col.type === "float") {
+        const num = parseFloat(value);
+        convertedValue = isNaN(num) ? 0.0 : num;
+      }
+    }
+
+    newFlows[index] = { ...newFlows[index], [field]: convertedValue };
     setFlows(newFlows);
   };
 
@@ -175,7 +188,14 @@ export default function ManualEntryForm({
     if (flows.length > 1) {
       // Remove the specific item
       const newFlows = flows.filter((_, i) => i !== indexToDelete);
-      setFlows(newFlows);
+
+      // Renumber all IDs sequentially starting from 1
+      const renumberedFlows = newFlows.map((flow, index) => ({
+        ...flow,
+        id: index + 1,
+      }));
+
+      setFlows(renumberedFlows);
     } else {
       // Reset to empty state if it's the last one
       setFlows([{ id: 1 }]);
@@ -301,6 +321,7 @@ export default function ManualEntryForm({
         return;
       }
 
+      // Build payload with exact field names matching backend schema
       const validFlows = flows.map((f) => {
         const row: Record<string, any> = { id: String(f.id) };
         columns.forEach((col) => {
@@ -322,7 +343,11 @@ export default function ManualEntryForm({
         body: JSON.stringify({ flows: validFlows, model: selectedModel }),
       });
 
-      if (!response.ok) throw new Error(await response.text());
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(errorText || "Analysis failed");
+      }
+
       const data = await response.json();
       setResults(data.results);
     } catch (err: any) {
@@ -397,7 +422,6 @@ export default function ManualEntryForm({
             <TableHeader>
               <TableRow>
                 <TableHead className="w-14 sm:w-20">ID</TableHead>
-                {/* Responsive Header: Text on Desktop, Symbol on Mobile */}
                 <TableHead>
                   <span className="hidden sm:inline">Data Completeness</span>
                   <span className="sm:hidden font-bold">%</span>
@@ -414,7 +438,6 @@ export default function ManualEntryForm({
                       #{flow.id}
                     </TableCell>
                     <TableCell>
-                      {/* DESKTOP: Bar + Text */}
                       <div className="hidden sm:flex items-center gap-4 max-w-sm">
                         <Progress
                           value={completeness}
@@ -424,7 +447,6 @@ export default function ManualEntryForm({
                           {completeness}%
                         </span>
                       </div>
-                      {/* MOBILE: Text Only */}
                       <div className="sm:hidden font-medium text-sm text-muted-foreground">
                         {completeness}%
                       </div>
@@ -556,6 +578,7 @@ export default function ManualEntryForm({
                               ? "number"
                               : "text"
                           }
+                          step={col.type === "float" ? "0.01" : "1"}
                           placeholder={col.example || "—"}
                           value={String(
                             (flows[editingFlowIndex][col.name] ?? "") as
@@ -608,14 +631,12 @@ export default function ManualEntryForm({
                   <TableRow className="bg-muted/50">
                     <TableHead className="w-16">ID</TableHead>
                     <TableHead>Pred.</TableHead>
-                    {/* Responsive Headers: Abbreviated on mobile */}
                     <TableHead>
                       <span className="hidden sm:inline">Confidence</span>
                       <span className="sm:hidden">Conf.</span>
                     </TableHead>
                     <TableHead>
                       <span className="hidden sm:inline">Status</span>
-                      {/* Empty on mobile, icon explains itself */}
                     </TableHead>
                     <TableHead className="text-right">
                       <span className="hidden sm:inline">Risk Level</span>
@@ -633,7 +654,6 @@ export default function ManualEntryForm({
                         {result.prediction}
                       </TableCell>
                       <TableCell>
-                        {/* DESKTOP: Bar + Text */}
                         <div className="hidden sm:flex items-center gap-2">
                           <div className="h-2 w-16 sm:w-24 bg-secondary rounded-full overflow-hidden">
                             <div
@@ -645,13 +665,11 @@ export default function ManualEntryForm({
                             {(result.confidence * 100).toFixed(1)}%
                           </span>
                         </div>
-                        {/* MOBILE: Text Only */}
                         <span className="sm:hidden text-xs font-mono">
                           {(result.confidence * 100).toFixed(0)}%
                         </span>
                       </TableCell>
                       <TableCell>
-                        {/* DESKTOP: Full Badge */}
                         <div className="hidden sm:block">
                           {result.is_threat ? (
                             <span className="text-destructive font-medium flex items-center gap-1">
@@ -663,7 +681,6 @@ export default function ManualEntryForm({
                             </span>
                           )}
                         </div>
-                        {/* MOBILE: Icon Only (Abstracted) */}
                         <div className="sm:hidden">
                           {result.is_threat ? (
                             <ShieldAlert className="w-4 h-4 text-destructive" />
@@ -673,7 +690,6 @@ export default function ManualEntryForm({
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        {/* DESKTOP: Text Badge */}
                         <Badge
                           className={`hidden sm:inline-flex ${getRiskColor(
                             result.risk_level
@@ -681,7 +697,6 @@ export default function ManualEntryForm({
                         >
                           {result.risk_level || "Normal"}
                         </Badge>
-                        {/* MOBILE: Abstract Dot */}
                         <div className="sm:hidden flex justify-end">
                           <div
                             className={`w-3 h-3 rounded-full ${getRiskColor(
@@ -727,7 +742,6 @@ export default function ManualEntryForm({
                   key={group.flowId}
                   className="bg-background border rounded-xl shadow-sm overflow-hidden transition-all"
                 >
-                  {/* Collapsible Header */}
                   <div
                     className="px-4 py-3 border-b bg-muted/20 flex items-center justify-between cursor-pointer hover:bg-muted/30 transition-colors"
                     onClick={() => toggleGroup(Number(group.flowId))}
@@ -748,7 +762,6 @@ export default function ManualEntryForm({
                     </div>
                   </div>
 
-                  {/* Collapsible Body */}
                   <AnimatePresence>
                     {isExpanded && (
                       <motion.div
@@ -780,6 +793,7 @@ export default function ManualEntryForm({
                                         ? "number"
                                         : "text"
                                     }
+                                    step={col?.type === "float" ? "0.01" : "1"}
                                     value={String(field.value)}
                                     placeholder="Required"
                                     onChange={(e) => {

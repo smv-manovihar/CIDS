@@ -9,7 +9,7 @@ import Link from "next/link";
 
 export default function Home() {
   const { theme, resolvedTheme } = useTheme();
-  
+
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
@@ -31,9 +31,10 @@ export default function Home() {
     },
   ];
 
-  const currentImage = mounted && (theme === "dark" || resolvedTheme === "dark") 
-    ? "/dark-mode.png" 
-    : "/light-mode.png";
+  const currentImage =
+    mounted && (theme === "dark" || resolvedTheme === "dark")
+      ? "/dark-mode.png"
+      : "/light-mode.png";
 
   return (
     <main className="min-h-screen bg-background selection:bg-primary/20">
@@ -43,10 +44,8 @@ export default function Home() {
       <section className="relative overflow-hidden py-12 md:py-24 border-b border-border">
         <div className="container mx-auto px-4 md:px-12 lg:px-24 relative z-10">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-8 items-center">
-            
             {/* Left Content */}
             <div className="flex flex-col gap-6 max-w-2xl mx-auto lg:mx-0 text-center lg:text-left">
-              
               {/* 1. Title */}
               <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-foreground tracking-tight leading-[1.15]">
                 Network Intrusion <br />
@@ -55,47 +54,48 @@ export default function Home() {
 
               {/* 2. Description (Now naturally second) */}
               <p className="text-lg sm:text-xl text-muted-foreground leading-relaxed max-w-xl mx-auto lg:mx-0 font-medium lg:font-normal">
-                Advanced AI-powered network threat detection with high precision.
+                Advanced AI-powered network threat detection with high
+                precision.
               </p>
 
               {/* 3. Button Section (Now naturally third) */}
               {/* Removed w-full to prevent full width stretching on mobile/tablet */}
               <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
                 <Link href="/inference">
-                  <Button size="lg" className="w-auto gap-2 shadow-lg shadow-primary/20 h-12 text-base px-8">
+                  <Button
+                    size="lg"
+                    className="w-auto gap-2 shadow-lg shadow-primary/20 h-12 text-base px-8"
+                  >
                     Start Detection <ArrowRight className="w-4 h-4" />
                   </Button>
                 </Link>
               </div>
-
             </div>
 
             {/* Right Content (Desktop Image) */}
             <div className="hidden lg:flex items-center justify-center">
               <div className="relative w-full max-w-[600px] aspect-video">
-                
                 {/* Branding Glow */}
                 <div
-                    className={`absolute inset-0 bg-linear-to-br ${
-                    theme === "dark" || resolvedTheme === "dark"
-                        ? "from-primary/30 to-accent/30"
-                        : "from-primary/20 to-accent/20"
-                    } rounded-2xl blur-3xl transform scale-110`}
+                  className={`absolute inset-0 bg-linear-to-br ${
+                    mounted && (theme === "dark" || resolvedTheme === "dark")
+                      ? "from-primary/30 to-accent/30"
+                      : "from-primary/20 to-accent/20"
+                  } rounded-2xl blur-3xl transform scale-110`}
                 />
-                
+
                 {/* Image Container */}
                 <div className="relative w-full h-full rounded-xl overflow-hidden">
-                   {mounted && (
-                      <img
-                        src={currentImage}
-                        alt="IDS Dashboard Preview "
-                        className="w-full h-full object-cover md:object-contain"
-                      />
-                    )}
+                  {mounted && (
+                    <img
+                      src={currentImage}
+                      alt="IDS Dashboard Preview "
+                      className="w-full h-full object-cover md:object-contain"
+                    />
+                  )}
                 </div>
               </div>
             </div>
-
           </div>
         </div>
       </section>
@@ -139,19 +139,19 @@ export default function Home() {
       {/* CTA Section */}
       <section className="py-20 border-t border-border">
         <div className="container mx-auto px-4 md:px-12 lg:px-24 text-center">
-            <div className="max-w-3xl mx-auto space-y-8">
-              <h2 className="text-3xl md:text-4xl font-bold">
-                Ready to Protect Your Network?
-              </h2>
-              <p className="text-lg text-muted-foreground max-w-xl mx-auto">
-                Upload your NetFlow data or manually test records with our advanced
-                detection system immediately.
-              </p>
-              <Link href="/inference">
-                <Button size="lg" className="gap-2 h-12 px-8 text-base">
-                  Launch Inference Dashboard <ArrowRight className="w-4 h-4" />
-                </Button>
-              </Link>
+          <div className="max-w-3xl mx-auto space-y-8">
+            <h2 className="text-3xl md:text-4xl font-bold">
+              Ready to Protect Your Network?
+            </h2>
+            <p className="text-lg text-muted-foreground max-w-xl mx-auto">
+              Upload your NetFlow data or manually test records with our
+              advanced detection system immediately.
+            </p>
+            <Link href="/inference">
+              <Button size="lg" className="gap-2 h-12 px-8 text-base">
+                Launch Inference Dashboard <ArrowRight className="w-4 h-4" />
+              </Button>
+            </Link>
           </div>
         </div>
       </section>

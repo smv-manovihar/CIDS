@@ -54,6 +54,10 @@ Follow these steps to set up the Cortex environment locally.
 Navigate to the backend directory and set up the Python environment using `uv`.
 
 ```bash
+pip install uv
+```
+
+```bash
 cd backend
 
 # Install dependencies and sync environment

@@ -659,6 +659,12 @@ def run_dynamic_inference_on_df(df: pd.DataFrame, model_name: str):
     return results[0], results[1]
 
 
+@app.get("/api/health")
+def health_check():
+    """Health check endpoint to verify backend is running."""
+    return {"status": "healthy", "message": "Backend is operational"}
+
+
 @app.get("/api/models")
 def get_models() -> List[str]:
     return MODELS

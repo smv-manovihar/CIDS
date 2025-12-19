@@ -4,7 +4,15 @@ import { useState, useEffect } from "react";
 import Header from "@/components/header";
 import ModelSelector from "@/components/model-selector";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Upload, PenTool, LayoutTemplate, Sparkles, ShieldCheck, RefreshCw, WifiOff } from "lucide-react";
+import {
+  Upload,
+  PenTool,
+  LayoutTemplate,
+  Sparkles,
+  ShieldCheck,
+  RefreshCw,
+  WifiOff,
+} from "lucide-react";
 import FileUploadSection from "@/components/file-upload-section";
 import ManualEntryForm from "@/components/manual-entry-form";
 import ColumnsDialog from "@/components/columns-dialog";
@@ -20,26 +28,32 @@ import { Separator } from "@/components/ui/separator";
 
 // --- INTERNAL COMPONENT: Dynamic Health Check Badge ---
 function SystemStatusBadge() {
-  const [status, setStatus] = useState<'checking' | 'ready' | 'error'>('checking');
+  const [status, setStatus] = useState<"checking" | "ready" | "error">(
+    "checking"
+  );
+
+  const API_BASE =
+    typeof window !== "undefined"
+      ? process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000"
+      : "http://localhost:8000";
 
   const runHealthCheck = async () => {
-    setStatus('checking');
-    
-    // SIMULATION: Dummy Health Check Logic
+    setStatus("checking");
+
     try {
-      // 1. Simulate Network Latency (1.5 seconds)
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      // 2. Simulate Response
-      const isBackendHealthy = true; 
-
-      if (isBackendHealthy) {
-        setStatus('ready');
+      const response = await fetch(`${API_BASE}/api/health`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.status === "healthy") {
+          setStatus("ready");
+        } else {
+          setStatus("error");
+        }
       } else {
-        setStatus('error');
+        setStatus("error");
       }
     } catch (err) {
-      setStatus('error');
+      setStatus("error");
     }
   };
 
@@ -47,7 +61,7 @@ function SystemStatusBadge() {
     runHealthCheck();
   }, []);
 
-  if (status === 'checking') {
+  if (status === "checking") {
     return (
       <div className="flex items-center justify-center sm:justify-start bg-amber-500/10 border border-amber-500/20 px-3 py-2 rounded-full gap-2 w-full sm:w-auto transition-all">
         <RefreshCw className="w-3 h-3 text-amber-600 animate-spin" />
@@ -58,15 +72,18 @@ function SystemStatusBadge() {
     );
   }
 
-  if (status === 'error') {
+  if (status === "error") {
     return (
-      <button 
+      <button
         onClick={runHealthCheck}
         className="flex items-center justify-center sm:justify-start bg-destructive/10 border border-destructive/20 px-3 py-2 rounded-full gap-2 w-full sm:w-auto hover:bg-destructive/20 transition-colors cursor-pointer group"
       >
         <WifiOff className="w-3 h-3 text-destructive" />
         <span className="text-xs font-medium text-destructive uppercase tracking-wide">
-          System Offline <span className="opacity-0 group-hover:opacity-100 transition-opacity ml-1 normal-case text-[10px]">(Retry)</span>
+          System Offline{" "}
+          <span className="opacity-0 group-hover:opacity-100 transition-opacity ml-1 normal-case text-[10px]">
+            (Retry)
+          </span>
         </span>
       </button>
     );
@@ -100,7 +117,6 @@ export default function InferencePage() {
       <Header />
 
       <div className="container mx-auto px-4 py-6 lg:py-10 max-w-6xl">
-        
         {/* Hero Section */}
         <section className="mb-8">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -125,7 +141,9 @@ export default function InferencePage() {
               <CardHeader className="border-b border-border/40 bg-muted/5 pb-4 px-4 sm:px-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-lg sm:text-xl">Inference Console</CardTitle>
+                    <CardTitle className="text-lg sm:text-xl">
+                      Inference Console
+                    </CardTitle>
                     <CardDescription className="mt-1 text-xs sm:text-sm">
                       Configure parameters and analyze traffic patterns.
                     </CardDescription>
@@ -135,7 +153,6 @@ export default function InferencePage() {
 
               <CardContent className="p-0">
                 <div className="bg-primary/5 border-b border-border/60 p-4 sm:p-6 flex flex-col sm:flex-row gap-4 sm:gap-5 sm:items-end sm:justify-between border-l-4 border-l-primary">
-                  
                   {/* Model Selector Zone */}
                   <div className="space-y-2 w-full sm:w-[340px]">
                     <label className="text-xs font-bold text-primary flex items-center gap-1.5 uppercase tracking-wider">
@@ -159,13 +176,14 @@ export default function InferencePage() {
 
                 <div className="p-4 sm:p-6 space-y-4">
                   <Tabs defaultValue="file" className="w-full">
-                    
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
-                       <span className="text-sm font-semibold text-foreground flex items-center gap-2">
-                          <span className="flex items-center justify-center w-5 h-5 rounded-full bg-muted text-xs text-muted-foreground">2</span>
-                          Choose Input Method
-                       </span>
-                       <TabsList className="h-9 p-1 bg-muted rounded-md w-full sm:w-auto grid grid-cols-2 sm:flex">
+                      <span className="text-sm font-semibold text-foreground flex items-center gap-2">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-muted text-xs text-muted-foreground">
+                          2
+                        </span>
+                        Choose Input Method
+                      </span>
+                      <TabsList className="h-9 p-1 bg-muted rounded-md w-full sm:w-auto grid grid-cols-2 sm:flex">
                         <TabsTrigger
                           value="file"
                           className="text-xs px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm"
@@ -183,15 +201,21 @@ export default function InferencePage() {
                       </TabsList>
                     </div>
 
-                    <TabsContent value="file" className="mt-0 focus-visible:outline-none animate-in fade-in-50 slide-in-from-left-1">
-                       <FileUploadSection
+                    <TabsContent
+                      value="file"
+                      className="mt-0 focus-visible:outline-none animate-in fade-in-50 slide-in-from-left-1"
+                    >
+                      <FileUploadSection
                         selectedModel={selectedModel}
                         onShowColumns={() => setShowColumnsDialog(true)}
                         onAnalysisComplete={handleAnalysisComplete}
                       />
                     </TabsContent>
 
-                    <TabsContent value="manual" className="mt-0 focus-visible:outline-none animate-in fade-in-50 slide-in-from-right-1">
+                    <TabsContent
+                      value="manual"
+                      className="mt-0 focus-visible:outline-none animate-in fade-in-50 slide-in-from-right-1"
+                    >
                       <ManualEntryForm selectedModel={selectedModel} />
                     </TabsContent>
                   </Tabs>
@@ -217,11 +241,13 @@ export default function InferencePage() {
                     className="underline hover:text-foreground"
                   >
                     guidelines
-                  </button>.
+                  </button>
+                  .
                 </p>
                 <Separator />
                 <p>
-                  2. <strong>Validation:</strong> Use manual entry to test edge cases before bulk upload.
+                  2. <strong>Validation:</strong> Use manual entry to test edge
+                  cases before bulk upload.
                 </p>
               </CardContent>
             </Card>

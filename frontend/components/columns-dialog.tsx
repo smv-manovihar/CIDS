@@ -1,9 +1,16 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Loader, AlertCircle } from "lucide-react"
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Loader, AlertCircle, FileSpreadsheet, Check } from "lucide-react"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { Card } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 
 interface ColumnsDialogProps {
   open: boolean
@@ -55,56 +62,90 @@ export default function ColumnsDialog({ open, onOpenChange }: ColumnsDialogProps
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>NetFlow Data Column Requirements</DialogTitle>
-          <DialogDescription>Your CSV file must include these columns for proper analysis</DialogDescription>
-        </DialogHeader>
-
-        {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-12 space-y-4">
-            <Loader className="w-8 h-8 text-accent animate-spin" />
-            <p className="text-muted-foreground">Loading column specifications...</p>
-          </div>
-        ) : error ? (
-          <div className="flex items-start gap-3 p-4 rounded-lg bg-destructive/10 border border-destructive/20">
-            <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+      {/* LAYOUT UPDATE:
+         - h-[100dvh] on mobile forces full screen height
+         - sm:h-auto & sm:max-h-[85vh] restricts it on desktop
+         - flex-col & p-0 allow us to create fixed header/footers with scrolling content
+      */}
+      <DialogContent className="w-full h-[80dvh] sm:h-auto sm:max-h-[85vh] sm:max-w-4xl flex flex-col gap-0 p-0 border-0 sm:border rounded-none sm:rounded-lg">
+        
+        {/* Fixed Header */}
+        <DialogHeader className="px-6 py-4 border-b bg-background shrink-0">
+          <div className="flex items-center gap-2">
+            <div className="p-2 bg-primary/10 rounded-full hidden sm:block">
+              <FileSpreadsheet className="w-5 h-5 text-primary" />
+            </div>
             <div>
-              <p className="font-medium text-foreground">Error Loading Schema</p>
-              <p className="text-sm text-muted-foreground">{error}</p>
+              <DialogTitle>Required Data Schema</DialogTitle>
+              <DialogDescription className="mt-1">
+                Ensure your CSV matches these specifications.
+              </DialogDescription>
             </div>
           </div>
-        ) : (
-          <div className="space-y-4">
-            <div className="grid gap-3">
+        </DialogHeader>
+
+        {/* Scrollable Content Area */}
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-muted/5">
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center h-full min-h-[200px] space-y-4">
+              <Loader className="w-8 h-8 text-primary animate-spin" />
+              <p className="text-muted-foreground animate-pulse">Fetching column definitions...</p>
+            </div>
+          ) : error ? (
+            <div className="flex flex-col items-center justify-center h-full text-center p-4">
+              <div className="p-3 bg-destructive/10 rounded-full mb-3">
+                <AlertCircle className="w-8 h-8 text-destructive" />
+              </div>
+              <h3 className="font-semibold text-foreground">Failed to Load Schema</h3>
+              <p className="text-sm text-muted-foreground mt-1 max-w-xs">{error}</p>
+              <button 
+                onClick={() => fetchColumns()}
+                className="mt-4 text-xs text-primary hover:underline"
+              >
+                Try Again
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
               {columns.map((column, idx) => (
-                <Card key={idx} className="p-4 border-border hover:border-accent/50 transition-colors">
-                  <div className="flex items-start justify-between gap-4 mb-2">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <code className="text-sm font-mono text-accent bg-card/50 px-2 py-1 rounded">
+                <Card 
+                  key={idx} 
+                  className="p-3 sm:p-4 border shadow-sm hover:shadow-md transition-all hover:border-primary/20 bg-card flex flex-col"
+                >
+                  <div className="flex items-start justify-between gap-3 mb-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center flex-wrap gap-2 mb-1.5">
+                        <code className="text-sm font-bold font-mono text-foreground bg-muted px-1.5 py-0.5 rounded break-all">
                           {column.name}
                         </code>
-                        <span className="text-xs font-medium text-muted-foreground">{column.type}</span>
-                        {column.required && <span className="text-xs font-bold text-destructive">REQUIRED</span>}
+                        {column.required && (
+                          <Badge variant="destructive" className="h-5 px-1.5 text-[10px] uppercase tracking-wider">
+                            Required
+                          </Badge>
+                        )}
                       </div>
-                      <p className="text-sm text-foreground mt-1">{column.description}</p>
+                      <p className="text-xs sm:text-sm text-muted-foreground leading-snug">
+                        {column.description}
+                      </p>
                     </div>
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    Example: <code className="bg-background px-1.5 py-0.5 rounded">{column.example}</code>
+                  
+                  <div className="mt-auto pt-3 border-t flex items-center justify-between text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1.5">
+                       <span className="font-medium bg-primary/5 px-2 py-0.5 rounded text-primary">
+                         {column.type}
+                       </span>
+                    </div>
+                    <div className="font-mono bg-muted/50 px-1.5 py-0.5 rounded max-w-[120px] truncate" title={column.example}>
+                      Ex: {column.example}
+                    </div>
                   </div>
                 </Card>
               ))}
             </div>
-
-            <div className="p-4 rounded-lg bg-primary/10 border border-primary/20 space-y-2">
-              <p className="text-sm font-medium text-foreground">✓ CSV format with headers in first row</p>
-              <p className="text-sm font-medium text-foreground">✓ All required fields must be present</p>
-              <p className="text-sm font-medium text-foreground">✓ Maximum file size: 100MB</p>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
+        
       </DialogContent>
     </Dialog>
   )

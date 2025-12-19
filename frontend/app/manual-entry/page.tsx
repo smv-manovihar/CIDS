@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label"
 import { CheckCircle, Loader } from "lucide-react"
 
 export default function ManualEntryPage() {
-  const [currentModel, setCurrentModel] = useState("RandomForest-v1.2")
+  const [currentModel, setCurrentModel] = useState("Random Forest")
   const [formData, setFormData] = useState({
     sourceIP: "192.168.1.100",
     destinationIP: "203.0.113.45",
@@ -104,7 +104,7 @@ export default function ManualEntryPage() {
               <div className="grid gap-4">
                 {/* Network Information */}
                 <div>
-                  <h3 className="text-sm font-medium text-foreground mb-3 text-accent">Network Information</h3>
+                  <h3 className="text-sm font-medium text-foreground mb-3">Network Information</h3>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <Label className="text-xs text-muted-foreground">Source IP</Label>
@@ -151,7 +151,7 @@ export default function ManualEntryPage() {
 
                 {/* Protocol Information */}
                 <div>
-                  <h3 className="text-sm font-medium text-foreground mb-3 text-accent">Protocol Details</h3>
+                  <h3 className="text-sm font-medium text-foreground mb-3">Protocol Details</h3>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
                       <Label className="text-xs text-muted-foreground">Protocol</Label>
@@ -178,7 +178,7 @@ export default function ManualEntryPage() {
 
                 {/* Traffic Information */}
                 <div>
-                  <h3 className="text-sm font-medium text-foreground mb-3 text-accent">Traffic Information</h3>
+                  <h3 className="text-sm font-medium text-foreground mb-3">Traffic Information</h3>
                   <div className="grid grid-cols-3 gap-3">
                     <div className="space-y-1">
                       <Label className="text-xs text-muted-foreground">Bytes In</Label>
@@ -232,7 +232,7 @@ export default function ManualEntryPage() {
             <ModelSelector onModelChange={setCurrentModel} />
 
             {result && (
-              <Card className="p-6 border-accent/20 bg-gradient-to-br from-card to-card">
+              <Card className="p-6 border-accent/20 bg-linear-to-br from-card to-card">
                 <div className="flex items-start gap-3 mb-4">
                   <div className="p-2 bg-accent/20 rounded-lg">
                     <CheckCircle className="w-5 h-5 text-accent" />
@@ -265,7 +265,7 @@ export default function ManualEntryPage() {
                     <ul className="space-y-1">
                       {result.details.suspiciousPatterns.map((pattern: string, idx: number) => (
                         <li key={idx} className="flex items-start gap-2">
-                          <div className="w-1.5 h-1.5 rounded-full bg-destructive mt-1 flex-shrink-0" />
+                          <div className="w-1.5 h-1.5 rounded-full bg-destructive mt-1 shrink-0" />
                           <span className="text-xs text-foreground">{pattern}</span>
                         </li>
                       ))}
